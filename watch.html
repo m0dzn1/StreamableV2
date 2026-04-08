@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!--
+  DISCORD EMBED FIX:
+  Discord uses og:video tags to embed videos.
+  Since our videos are stored in IndexedDB (blob URLs),
+  Discord CANNOT embed them directly — blob:// URLs are local-only.
+  
+  For Discord embeds to actually WORK, you need a real HTTP video URL.
+  These tags are pre-filled by JS when a real backend URL is available.
+  
+  For GitHub Pages (static only), the link will show a rich embed card
+  (title + description) but NOT inline video autoplay in Discord.
+  To get real video embeds in Discord, deploy with a backend (see README).
+-->
+
+<meta property="og:site_name" content="Streamable V2">
+<meta property="og:type" content="video.other">
+<meta property="og:title" id="meta-title" content="Streamable V2">
+<meta property="og:description" id="meta-desc" content="Watch this video on Streamable V2">
+<meta property="og:url" id="meta-url" content="">
+
+<!-- These need real HTTP URLs to work in Discord -->
+<meta property="og:video" id="meta-video" content="">
+<meta property="og:video:secure_url" id="meta-video-secure" content="">
+<meta property="og:video:type" content="video/mp4">
+<meta property="og:video:width" id="meta-width" content="1280">
+<meta property="og:video:height" id="meta-height" content="720">
+<meta property="og:image" id="meta-image" content="">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="720">
+
+<!-- Twitter card -->
+<meta name="twitter:card" content="player">
+<meta name="twitter:site" content="@streamablev2">
+<meta name="twitter:title" id="tw-title" content="Streamable V2">
+<meta name="twitter:description" id="tw-desc" content="Watch this video on Streamable V2">
+<meta name="twitter:player" id="tw-player" content="">
+<meta name="twitter:player:width" content="1280">
+<meta name="twitter:player:height" content="720">
+<meta name="twitter:image" id="tw-image" content="">
+
+<title id="page-title">Streamable V2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+/* Watch page specific */
+body { background: #111; }
+
+.watch-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: #fff;
+  border-bottom: 1px solid #e5e5e5;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.watch-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: calc(100vh - 53px);
+  background: #111;
+  padding-bottom: 60px;
+}
+
+.video-player-wrap {
+  width: 100%;
+  max-width: 1100px;
+  padding: 0;
+}
+
+.video-player-box {
+  position: relative;
+  background: #000;
+  width: 100%;
+}
+
+.video-player-box video {
+  width: 100%;
+  max-height: 80vh;
+  display: block;
+  background: #000;
+}
+
+.watch-info {
+  width: 100%;
+  max-width: 1100px;
+  padding: 16px 20px;
+  background: #fff;
+}
+
+.watch-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.watch-meta-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.watch-meta-item {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.watch-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.watch-share-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  flex: 1;
+  max-width: 500px;
+  min-width: 200px;
+}
+
+.watch-share-url {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  outline: none;
+  font-size: 0.82rem;
+  color: #1fa1f1;
+  background: #f7f7f7;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.watch-copy-btn {
+  padding: 8px 16px;
+  background: #fff;
+  border: none;
+  border-left: 1px solid #e0e0e0;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: #555;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.watch-copy-btn:hover { background: #f5f5f5; }
+.watch-copy-btn.copied { color: #22c55e; }
+
+.btn-embed {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 0.82rem;
+  color: #555;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.btn-embed:hover { background: #f5f5f5; }
+
+.discord-note {
+  margin-top: 14px;
+  padding: 12px 16px;
+  background: #f0f4ff;
+  border: 1px solid #c7d7ff;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #444;
+  line-height: 1.6;
+}
+
+.discord-note strong { color: #1fa1f1; }
+
+.not-found-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+  gap: 12px;
+  color: #888;
+}
+
+.not-found-wrap h2 { font-size: 3rem; color: #ddd; font-weight: 700; }
+.not-found-wrap p { font-size: 0.9rem; }
+.not-found-wrap a { color: #1fa1f1; text-decoration: none; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+
+<header class="watch-header">
+  <a href="index.html" class="brand" style="text-decoration:none">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" fill="#1fa1f1"/>
+      <path d="M9.5 7.5v9l7-4.5-7-4.5z" fill="white"/>
+    </svg>
+    <span class="brand-name" style="margin-left:8px">Streamable V2</span>
+  </a>
+  <a href="index.html" style="font-size:0.82rem;color:#1fa1f1;text-decoration:none">← My videos</a>
+</header>
+
+<div class="watch-layout">
+  <div id="watchContent" style="width:100%;display:flex;flex-direction:column;align-items:center">
+    <div class="video-player-wrap">
+      <div class="video-player-box">
+        <video id="mainVideo" controls autoplay preload="auto" playsinline></video>
+      </div>
+    </div>
+    <div class="watch-info">
+      <div class="watch-title" id="watchTitle">Loading...</div>
+      <div class="watch-meta-row" id="watchMeta"></div>
+      <div class="watch-actions">
+        <div class="watch-share-row">
+          <input type="text" class="watch-share-url" id="watchShareUrl" readonly onclick="this.select()">
+          <button class="watch-copy-btn" id="watchCopyBtn" onclick="doCopy()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+            Copy Link
+          </button>
+        </div>
+        <button class="btn-embed">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
+          Embed
+        </button>
+      </div>
+      <div class="discord-note" id="discordNote" style="display:none">
+        <strong>Discord embed info:</strong> Paste your share link into Discord.<br>
+        <span id="discordNoteText"></span>
+      </div>
+    </div>
+  </div>
+
+  <div id="notFoundWrap" class="not-found-wrap" style="display:none">
+    <h2>404</h2>
+    <p>Video not found or has been deleted.</p>
+    <a href="index.html">← Go back to your videos</a>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>initWatchPage();</script>
+</body>
+</html>

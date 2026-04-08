@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Streamable V2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- TOP HEADER -->
+<header class="header">
+  <div class="header-left">
+    <button class="hamburger" onclick="toggleSidebar()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="#555"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+    </button>
+    <a href="index.html" class="brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" fill="#1fa1f1"/>
+        <path d="M9.5 7.5v9l7-4.5-7-4.5z" fill="white"/>
+      </svg>
+      <span class="brand-name">Streamable V2</span>
+    </a>
+  </div>
+  <div class="header-right">
+    <button class="btn-upgrade">⭐ Upgrade ✨</button>
+    <div class="account-menu">My Account ▾</div>
+  </div>
+</header>
+
+<!-- LAYOUT WRAPPER -->
+<div class="layout" id="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-item active">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
+      All videos
+    </div>
+
+    <div class="label-tip" id="labelTip">
+      <button class="tip-close" onclick="document.getElementById('labelTip').style.display='none'">×</button>
+      <div class="tip-icon-wrap">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="#888"><path d="M17.63 5.84C17.27 5.33 16.67 5 16 5H5c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h11c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16z"/></svg>
+      </div>
+      <p>Use labels to organize and filter your video library.</p>
+      <button class="btn-new-label">Create new label</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- PROCESSING NOTICE (shown during upload/process) -->
+    <div class="notice-banner" id="processingBanner" style="display:none">
+      <div class="notice-spinner"></div>
+      <div class="notice-text">
+        <strong id="processingTitle">Processing video...</strong>
+        <span id="processingSubtitle">Optimizing for smooth playback at original quality</span>
+      </div>
+      <div class="notice-bar-wrap">
+        <div class="notice-bar-fill" id="noticeFill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- UPLOAD BAR -->
+    <div class="upload-bar">
+      <label class="btn-upload-video" for="fileInput">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M19.35 10.04A7.49 7.49 0 0012 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 000 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+        Upload video
+      </label>
+      <input type="file" id="fileInput" accept="video/*" style="display:none">
+      <input type="text" class="url-paste-input" placeholder="Paste a video URL" id="urlInput" readonly>
+    </div>
+
+    <!-- SECTION HEADER -->
+    <div class="section-header">
+      <h2>All videos (<span id="videoCount">0</span>)</h2>
+    </div>
+
+    <!-- VIDEO GRID -->
+    <div class="video-grid" id="videoGrid">
+      <div class="empty-grid" id="emptyGrid">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="#d0d0d0"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+        <p>Upload a video to get started</p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
