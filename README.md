@@ -1,9 +1,3 @@
-To make this text feel more "human," we should shift the tone from a technical README to a helpful guide written by a developer for other developers. Humans tend to use more conversational transitions, personal recommendations, and a bit of "inside baseball" context.
-
-Here is the revised version:
-
----
-
 # Streamable V2
 
 This is a pixel-perfect clone of Streamable built for speed and simplicity. You can upload videos, grab shareable links, and get rich embed cards for Discord. 
