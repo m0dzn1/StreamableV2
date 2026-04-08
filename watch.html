@@ -231,7 +231,8 @@ body { background: #111; }
   <div id="watchContent" style="width:100%;display:flex;flex-direction:column;align-items:center">
     <div class="video-player-wrap">
       <div class="video-player-box">
-        <video id="mainVideo" controls autoplay preload="auto" playsinline></video>
+        <video id="mainVideo" controls autoplay preload="auto" playsinline
+               webkit-playsinline x-webkit-airplay="allow"></video>
       </div>
     </div>
     <div class="watch-info">

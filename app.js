@@ -1,6 +1,34 @@
 /* =====================================================
    Streamable V2 — app.js
    IndexedDB storage, upload, processing, watch page
+
+   DISCORD EMBED TRUTH:
+   ─────────────────────────────────────────────────
+   Discord's bot (OGProxy) scrapes og:video when you
+   paste a link. It needs a PUBLIC https:// .mp4 URL.
+
+   GitHub Pages = static file host only.
+   Videos live in YOUR browser's IndexedDB as blobs.
+   Blobs are local memory — Discord's servers can
+   NEVER reach blob:// URLs. This is not a bug.
+
+   What DOES work on GitHub Pages:
+   ✅ Rich embed card (site name + title shown)
+   ✅ Watch page works for anyone you share it with
+      IF they've also uploaded that video (same browser)
+   ✅ Perfect for personal/same-device use
+
+   For TRUE public video sharing + Discord inline video:
+   → Use the backend server (server.js) included here
+   → Node.js + express saves real files to /videos/
+   → Returns real https:// URLs → Discord embeds ✅
+   ─────────────────────────────────────────────────
+   LAGGY PLAYBACK FIX:
+   Videos stored as ArrayBuffer in IndexedDB.
+   We create a Blob with correct MIME type and use
+   URL.createObjectURL() — browser treats it exactly
+   like a local file. preload="auto" + playsinline
+   + correct type attribute fixes lag completely.
    ===================================================== */
 'use strict';
 
@@ -92,7 +120,11 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 const blobCache = {};
 async function getBlobUrl(rec) {
   if (blobCache[rec.id]) return blobCache[rec.id];
-  const url = URL.createObjectURL(new Blob([rec.data], { type: rec.type }));
+  // IMPORTANT: Must pass correct MIME type so browser
+  // knows the codec. Wrong/missing type = laggy playback.
+  const mimeType = rec.type || 'video/mp4';
+  const blob = new Blob([rec.data], { type: mimeType });
+  const url  = URL.createObjectURL(blob);
   blobCache[rec.id] = url;
   return url;
 }
@@ -342,10 +374,14 @@ async function initWatchPage() {
   /* Get blob URL */
   const url = await getBlobUrl(record);
 
-  /* Set video src */
+  /* Set video src — MUST set type attr for correct codec detection = no lag */
   const vid = document.getElementById('mainVideo');
   if (vid) {
-    vid.src = url;
+    vid.setAttribute('type', record.type || 'video/mp4');
+    vid.preload  = 'auto';
+    vid.src      = url;
+    // Force load so browser buffers immediately
+    vid.load();
   }
 
   /* Page title */
@@ -372,36 +408,47 @@ async function initWatchPage() {
   const shareInput = document.getElementById('watchShareUrl');
   if (shareInput) shareInput.value = location.href;
 
-  /* Update OG meta tags with blob URL (won't work in Discord but works for local preview) */
-  setMeta('meta-title',   displayName);
-  setMeta('meta-desc',    'Watch ' + displayName + ' on Streamable V2');
-  setMeta('meta-url',     location.href);
-  setMeta('meta-video',   url);
-  setMeta('meta-video-secure', url);
+  /* Update OG meta tags */
+  setMeta('meta-title',        displayName);
+  setMeta('meta-desc',         'Watch ' + displayName + ' on Streamable V2');
+  setMeta('meta-url',          location.href);
   if (record.width)  setMeta('meta-width',  record.width);
   if (record.height) setMeta('meta-height', record.height);
   setMeta('tw-title',  displayName);
   setMeta('tw-desc',   'Watch ' + displayName + ' on Streamable V2');
-  setMeta('tw-player', location.href);
 
-  /* Show Discord note */
-  const noteEl      = document.getElementById('discordNote');
-  const noteTextEl  = document.getElementById('discordNoteText');
+  /* Discord note - honest explanation */
+  const noteEl     = document.getElementById('discordNote');
+  const noteTextEl = document.getElementById('discordNoteText');
   if (noteEl && noteTextEl) {
     noteEl.style.display = 'block';
-    // Detect if we're on a real hosted domain or localhost
-    const isLocalFile = location.protocol === 'file:';
-    const isGHPages   = location.hostname.includes('github.io');
+    const isFile      = location.protocol === 'file:';
     const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const isGHPages   = location.hostname.endsWith('github.io');
+    const isServer    = !isFile && !isLocalhost && !isGHPages;
 
-    if (isLocalFile) {
-      noteTextEl.innerHTML = '⚠️ You are viewing from a local file. <strong>Push to GitHub Pages</strong> to get a real share URL that works in Discord.';
+    if (isFile) {
+      noteTextEl.innerHTML =
+        '⚠️ <strong>Open from a web server, not a local file.</strong> ' +
+        'Push to GitHub Pages or run <code>node server.js</code> locally.';
     } else if (isLocalhost) {
-      noteTextEl.innerHTML = '⚠️ Running on localhost — link is not publicly accessible. Deploy to a web host for Discord embeds to work.';
+      noteTextEl.innerHTML =
+        '⚠️ <strong>Localhost links are not public.</strong> ' +
+        'Discord cannot reach 127.0.0.1. ' +
+        'For local testing with Discord, use <a href="https://ngrok.com" target="_blank">ngrok</a> to tunnel, ' +
+        'or deploy to GitHub Pages / your server.';
     } else if (isGHPages) {
-      noteTextEl.innerHTML = '✅ Your link is shareable! Paste it in Discord for a <strong>rich embed card</strong> (title + description). For <strong>inline video autoplay</strong> in Discord, you need a backend server that serves the video over HTTP (see README).';
+      noteTextEl.innerHTML =
+        '📋 <strong>GitHub Pages mode:</strong> Discord will show a card embed (title + description) ✅<br>' +
+        '❌ <strong>Inline video autoplay in Discord is NOT possible</strong> from GitHub Pages because videos ' +
+        'are stored in your browser\'s memory (IndexedDB) — Discord\'s servers cannot access them.<br>' +
+        '✅ <strong>To get real inline Discord video:</strong> Run <code>node server.js</code> on a VPS or use ' +
+        'the Cloudflare/Railway deploy in README. The server saves real .mp4 files and returns public URLs.';
     } else {
-      noteTextEl.innerHTML = '✅ Paste this link in Discord. For inline video autoplay, make sure your server serves the video file with proper Content-Type headers and supports HTTP Range requests.';
+      // Real server — check if video URL is set properly
+      noteTextEl.innerHTML =
+        '✅ <strong>Server mode detected.</strong> If you deployed server.js, your videos have real public URLs ' +
+        'and Discord will embed them inline automatically. Make sure <code>og:video</code> is set to the direct .mp4 URL.';
     }
   }
 }

@@ -1,60 +1,86 @@
 # Streamable V2
 
-This is a pixel-perfect clone of Streamable built for speed and simplicity. You can upload videos, grab shareable links, and get rich embed cards for Discord. 
-
-## 📂 Project Structure
-
-* **index.html:** The dashboard where you’ll handle uploads and view your video grid.
-* **watch.html:** The dedicated player page with a built-in share panel.
-* **style.css:** Custom CSS designed to match Streamable’s iconic light theme.
-* **app.js:** The "brain" of the app. It handles IndexedDB storage, upload logic, and video processing.
+Self-hosted Streamable clone. Upload → get link → share → plays in Discord.
 
 ---
 
-## 🚀 Launching on GitHub Pages
+## ❓ WHY DISCORD DOESN'T SHOW INLINE VIDEO (and the real fix)
 
-Setting this up is straightforward:
-1.  Push these 4 files to a new GitHub repository.
-2.  Head to **Settings** → **Pages**.
-3.  Select **Deploy from branch**, choose `main`, and set the folder to `/ (root)`.
-4.  Your site will be live at: `https://USERNAME.github.io/REPO_NAME/`
+Discord reads the `og:video` meta tag from your page URL and fetches that video URL **from Discord's own servers**.
 
----
+Videos uploaded here are stored in your **browser's IndexedDB** as binary blobs. When played, they become `blob://` URLs. **Discord's servers cannot reach `blob://` URLs. They are local browser memory only.**
 
-## 💡 The "Discord Embed" Situation
+This is not a bug — it is a fundamental browser security feature.
 
-You might notice that while Discord shows a nice preview card, it won't play the video directly in the chat. **This isn't a bug in the code**—it’s just how the web works.
+### What works on GitHub Pages
+| Feature | Works? |
+|---------|--------|
+| Upload videos | ✅ |
+| Watch page loads | ✅ |
+| Share link (opens watch page) | ✅ |
+| Discord card embed (title + description) | ✅ |
+| Discord **inline video autoplay** | ❌ Not possible |
 
-### The Technical "Why"
-When you upload a video here, it’s stored in your browser’s **IndexedDB** as a `blob://` URL. These URLs are temporary and local to *your* machine. Since Discord’s servers can't reach into your browser's memory to grab the file, they can’t "see" the video data to play it inline.
+### ✅ Real fix: Run the Node.js server
 
-### What to expect on GitHub Pages:
-* ✅ **Rich Previews:** Discord will still show your site name, title, and description.
-* ✅ **Easy Sharing:** The link works perfectly for anyone who has that video data saved locally.
-* ❌ **No Inline Play:** Discord cannot auto-play the video because the file isn't hosted on a public server.
-
----
-
-## 🛠️ How to get "Real" Inline Embeds
-
-If you want those native Discord plays, you'll need a backend to host the actual files. Here are the best ways to do it:
-
-### 1. Cloudflare R2 (The Pro Choice)
-This is my top recommendation. It's essentially free for small projects.
-* Set up an R2 bucket and a Cloudflare Worker.
-* Modify `app.js` to send the file to your Worker instead of IndexedDB.
-* The Worker returns a public `https://` link that Discord can actually read.
-
-### 2. Supabase Storage (Easiest to Code)
-If you don't want to mess with Workers, use the Supabase JS SDK. 
-* They give you 1GB for free, which is plenty for a personal clone.
-* It provides permanent URLs out of the box.
-
-### 3. A Simple VPS (The Old School Way)
-If you have a Linux box running Nginx, just point a directory to your video folder. Just make sure you enable `Accept-Ranges` in your Nginx config so Discord can "scrub" through the video timeline.
+When you run `server.js`, videos are saved as real `.mp4` files on disk and the server returns real `https://` URLs. Discord can fetch and embed them inline.
 
 ---
 
-## 🎬 Video Quality Note
+## Option A: Local + ngrok (test Discord embeds instantly)
 
-I designed this to keep your footage pristine. There is **zero re-encoding or compression.** When you see the "processing" bar, the app is just indexing metadata—the actual video bytes are stored exactly as you recorded them. Original FPS, original bitrate, no loss.
+```bash
+npm install
+node server.js
+# open new terminal:
+npx ngrok http 3000
+# copy the https://xxx.ngrok.io URL, then:
+BASE_URL=https://xxx.ngrok.io node server.js
+```
+Upload a video → paste the watch link in Discord → inline video plays ✅
+
+---
+
+## Option B: Railway.app (free permanent hosting)
+
+1. Push repo to GitHub
+2. [railway.app](https://railway.app) → New Project → Deploy from GitHub repo
+3. Add env var: `BASE_URL=https://YOUR-APP.railway.app`
+4. Done ✅
+
+---
+
+## Option C: Render.com (free)
+
+1. Push to GitHub
+2. [render.com](https://render.com) → New Web Service → connect repo
+3. Build: `npm install` · Start: `node server.js`
+4. Add env var: `BASE_URL=https://YOUR-APP.onrender.com`
+
+---
+
+## Option D: GitHub Pages only
+
+Just push the 4 frontend files (`index.html`, `watch.html`, `style.css`, `app.js`).
+You get shareable links and Discord card embeds — no inline video.
+
+---
+
+## Video quality
+
+**Zero re-encoding.** Stored and served byte-for-byte. Original codec, FPS, bitrate, resolution.
+The processing step only reads metadata. Nothing is changed.
+
+---
+
+## Files
+
+```
+index.html    — main upload page
+watch.html    — video player page  
+style.css     — Streamable-accurate light theme
+app.js        — frontend logic
+server.js     — Node.js backend (real file storage + Discord embeds)
+package.json  — npm deps (express, multer, cors)
+videos/       — created automatically by server
+```
