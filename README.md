@@ -1,73 +1,66 @@
+To make this text feel more "human," we should shift the tone from a technical README to a helpful guide written by a developer for other developers. Humans tend to use more conversational transitions, personal recommendations, and a bit of "inside baseball" context.
+
+Here is the revised version:
+
+---
+
 # Streamable V2
 
-A pixel-accurate Streamable clone. Upload videos, get shareable links, embed in Discord.
+This is a pixel-perfect clone of Streamable built for speed and simplicity. You can upload videos, grab shareable links, and get rich embed cards for Discord. 
 
-## Files
+## 📂 Project Structure
 
-```
-index.html   — main page (upload + video grid)
-watch.html   — video player + share panel
-style.css    — Streamable-accurate light theme
-app.js       — all logic (IndexedDB, upload, processing, watch page)
-```
-
-## Deploy to GitHub Pages
-
-1. Push all 4 files to a GitHub repo
-2. Settings → Pages → Deploy from branch → main → / (root)
-3. Your URL: `https://USERNAME.github.io/REPO_NAME/`
+* **index.html:** The dashboard where you’ll handle uploads and view your video grid.
+* **watch.html:** The dedicated player page with a built-in share panel.
+* **style.css:** Custom CSS designed to match Streamable’s iconic light theme.
+* **app.js:** The "brain" of the app. It handles IndexedDB storage, upload logic, and video processing.
 
 ---
 
-## Why Discord shows embed card but NOT inline video
+## 🚀 Launching on GitHub Pages
 
-This is a fundamental web limitation, not a bug in this code.
-
-### How Discord embeds work:
-Discord's bot visits your URL and reads `<meta property="og:video" content="...">`.
-It then fetches that video URL directly to display inline.
-
-### Why blob:// URLs don't work:
-Videos uploaded here are stored in **browser IndexedDB** as binary data and served
-as `blob://` URLs (e.g. `blob://localhost/abc123`). These URLs:
-- Only exist in YOUR browser's memory
-- Cannot be accessed by Discord's servers
-- Are destroyed when you close the browser tab
-
-### What DOES work on GitHub Pages:
-✅ The share link opens the watch page correctly  
-✅ Discord shows a rich embed card (site name + title + description)  
-✅ Anyone with the link can watch — IF they have the video saved in their own browser  
-❌ Discord cannot auto-play the video inline  
-
-### To get REAL inline Discord embeds:
-
-You need a backend that stores and serves video files over HTTP.
-
-#### Option A: Cloudflare R2 (Free, Recommended)
-1. Create Cloudflare account → R2 bucket
-2. Deploy a Worker that uploads to R2 and returns a real `https://` URL
-3. In `app.js`, replace `dbPut/getBlobUrl` with fetch calls to your Worker
-4. The real URL goes in `og:video` meta tag → Discord embeds inline ✅
-
-#### Option B: Any VPS (nginx + node)
-```nginx
-location /videos/ {
-    root /var/www/streamablev2;
-    add_header Accept-Ranges bytes;
-    add_header Access-Control-Allow-Origin *;
-}
-```
-Upload files to `/var/www/streamablev2/videos/ID.mp4`, return the URL.
-
-#### Option C: Supabase Storage (Free tier)
-Use `@supabase/supabase-js` to upload to Supabase Storage bucket.
-Returns real `https://` URLs. Free up to 1GB.
+Setting this up is straightforward:
+1.  Push these 4 files to a new GitHub repository.
+2.  Head to **Settings** → **Pages**.
+3.  Select **Deploy from branch**, choose `main`, and set the folder to `/ (root)`.
+4.  Your site will be live at: `https://USERNAME.github.io/REPO_NAME/`
 
 ---
 
-## Video Quality
+## 💡 The "Discord Embed" Situation
 
-Videos are stored **exactly as uploaded** — no re-encoding, no compression,
-no quality loss, original FPS preserved. The "processing" step only reads
-metadata and indexes the file. The actual video bytes are stored byte-for-byte.
+You might notice that while Discord shows a nice preview card, it won't play the video directly in the chat. **This isn't a bug in the code**—it’s just how the web works.
+
+### The Technical "Why"
+When you upload a video here, it’s stored in your browser’s **IndexedDB** as a `blob://` URL. These URLs are temporary and local to *your* machine. Since Discord’s servers can't reach into your browser's memory to grab the file, they can’t "see" the video data to play it inline.
+
+### What to expect on GitHub Pages:
+* ✅ **Rich Previews:** Discord will still show your site name, title, and description.
+* ✅ **Easy Sharing:** The link works perfectly for anyone who has that video data saved locally.
+* ❌ **No Inline Play:** Discord cannot auto-play the video because the file isn't hosted on a public server.
+
+---
+
+## 🛠️ How to get "Real" Inline Embeds
+
+If you want those native Discord plays, you'll need a backend to host the actual files. Here are the best ways to do it:
+
+### 1. Cloudflare R2 (The Pro Choice)
+This is my top recommendation. It's essentially free for small projects.
+* Set up an R2 bucket and a Cloudflare Worker.
+* Modify `app.js` to send the file to your Worker instead of IndexedDB.
+* The Worker returns a public `https://` link that Discord can actually read.
+
+### 2. Supabase Storage (Easiest to Code)
+If you don't want to mess with Workers, use the Supabase JS SDK. 
+* They give you 1GB for free, which is plenty for a personal clone.
+* It provides permanent URLs out of the box.
+
+### 3. A Simple VPS (The Old School Way)
+If you have a Linux box running Nginx, just point a directory to your video folder. Just make sure you enable `Accept-Ranges` in your Nginx config so Discord can "scrub" through the video timeline.
+
+---
+
+## 🎬 Video Quality Note
+
+I designed this to keep your footage pristine. There is **zero re-encoding or compression.** When you see the "processing" bar, the app is just indexing metadata—the actual video bytes are stored exactly as you recorded them. Original FPS, original bitrate, no loss.
